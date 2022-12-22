@@ -5,71 +5,34 @@ app.use(express.json());
 app.use(cors());
 const fs = require("fs");
 
-const {
-  getData,
-  nuevaCancion,
-  editarCancion,
-  eliminarCancion,
-} = require("index.html ");
-
 app.get("/", (req, res) => {
-  const endpoint = fs.readFileSync("index.html", "utf8");
-  res.send(endpoint);
+  res.sendFile(__dirname + "/index.html");
 });
 
-app.get("/canciones", async (req, res) => {
-  let resultado = await getData(datos);
-  res.json(JSON.stringify(resultado));
+app.get("/canciones", (req, res) => {
+  const canciones = JSON.parse(fs.readFileSync("repertorio.json", "utf8"));
+  res.json(canciones);
 });
 
-app.post("/cancion", async (req, res) => {
-  try {
-    const datos = Object.values(req.body);
-    const respuesta = await nuevaCancion(datos);
-    res.send(201);
-    res.end(JSON.stringify(respuesta));
-  } catch (error) {
-    res.end(
-      JSON.stringify({
-        code: error.code,
-        message: "Error inesperado. Contacte al administrador.",
-      })
-    );
-  }
+app.put("/canciones/:id", (req, res) => {
+  const { id } = req.params;
+  const cancion = req.body;
+  const canciones = JSON.parse(fs.readFileSync("repertorio.json", "utf8"));
+
+  const index = canciones.findIndex((cancion) => cancion.id === parseInt(id));
+  canciones[index] = cancion;
+  fs.writeFileSync("repertorio.json", JSON.stringify(canciones));
+  res.send("canción actualizada");
 });
 
-app.put("/cancion", async (req, res) => {
-  try {
-    const datos = Object.values(req.body);
-    const respuesta = await editarCancion(datos);
-    res.statusCode(201);
-    res.end(JSON.stringify(respuesta));
-  } catch (error) {
-    res.end(
-      JSON.stringify({
-        code: error.code,
-        message: "Error inesperado. Contacte al administrador.",
-      })
-    );
-  }
+app.delete("/canciones/:id", (req, res) => {
+  const { id } = req.params;
+  const canciones = JSON.parse(fs.readFileSync("repertorio.json", "utf8"));
+
+  const index = canciones.findIndex((cancion) => cancion.id === parseInt(id));
+  canciones.splice(index, 1);
+  fs.writeFileSync("repertorio.json", JSON.stringify(canciones));
+  res.send("canción eliminada");
 });
 
-app.delete("/cancion/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const respuesta = await eliminarCancion(id);
-    res.statusCode(201);
-    res.end(JSON.stringify(respuesta));
-  } catch (error) {
-    res.end(
-      JSON.stringify({
-        code: error.code,
-        message: "Error inesperado. Contacte al administrador.",
-      })
-    );
-  }
-});
-
-app.listen(3000, () => {
-  console.log("Servidor escuchando en el puerto 3000");
-});
+app.listen(3000, console.log("Server running on port 3000"));
